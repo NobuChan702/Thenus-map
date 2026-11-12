@@ -1,11 +1,11 @@
 (function(){
 const D=window.THENUS_DATA, W=2048, H=1948;
 const params=new URLSearchParams(location.search);
-const CFG=Object.assign({build:'home',version:'14'},window.THENUS_CONFIG||{});
+const CFG=Object.assign({build:'home',version:'15'},window.THENUS_CONFIG||{});
 if(params.get('build')==='module'||params.get('build')==='home')CFG.build=params.get('build');
 const V='?v='+CFG.version, DM=false;
 
-const art=s=>CFG.build==='module'?(s.emblem||''):(s.token||s.emblem||'');
+const art=s=>{const u=CFG.build==='module'?(s.emblem||''):(s.token||s.emblem||'');return u?u+V:'';};
 document.documentElement.dataset.build=CFG.build;
 const toLL=(x,y)=>L.latLng(-y,x);
 const bounds=L.latLngBounds(toLL(0,H),toLL(W,0));
@@ -81,8 +81,10 @@ const popupHTML=s=>{
 const toks=D.creatures.tokens.map(t=>{
   const s=SP[t.name];
   const badge=s.activity==='night'?'<span class="badge" title="Nocturnal">☾</span>':s.activity==='day'?'<span class="badge" style="background:#e9a93a;color:#fff">☀</span>':'';
-  const m=L.marker(toLL(t.x,t.y),{title:s.name,riseOnHover:true,
-    icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="tok ${s.tier==='Rend'?'rend':'kael'}"><img src="${art(s)}" alt="${esc(s.name)}" loading="lazy"><span class="ring"></span>${badge}</div>`})});
+  const tierCls=s.tier==='Rend'?'rend':s.tier==='Kael'?'kael':'tier-x';
+  const m=L.marker(toLL(t.x,t.y),{riseOnHover:true,
+    icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="tok ${tierCls}"><img src="${art(s)}" alt="${esc(s.name)}" loading="lazy" decoding="async" draggable="false"><span class="ring"></span>${badge}</div>`})});
+  m.bindTooltip(esc(s.name),{direction:'top',offset:[0,0],className:'tok-tip',opacity:1});
   m.bindPopup(popupHTML(s),{maxWidth:Math.min(320,window.innerWidth-60),autoPanPadding:[20,20]}); m._t=t; m._s=s; return m;});
 const HL={name:null,hideOthers:false};
 const refresh=()=>{

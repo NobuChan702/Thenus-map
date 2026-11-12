@@ -15,9 +15,9 @@ html,body,#map{margin:0;height:100%;background:#1e4670}
 
 .tok{position:absolute;left:0;top:0;width:var(--ts,34px);height:var(--ts,34px);transform:translate(-50%,-50%);border-radius:50%;cursor:pointer;
  background:#2b2118;padding:0;box-shadow:0 0 0 2px #2b2118,0 3px 6px rgba(0,0,0,.65);transition:transform .12s}
-.tok:hover{transform:translate(-50%,-50%) scale(1.18);z-index:1000}
-.tok .ring{position:absolute;inset:0;border-radius:50%;border:3px solid #d8b25a;box-shadow:inset 0 0 0 1.5px #5a3f12,inset 0 0 6px rgba(0,0,0,.6)}
-.tok.rend .ring{border-color:#c0ccd2;box-shadow:inset 0 0 0 1.5px #3e4a50,inset 0 0 6px rgba(0,0,0,.6)}
+.tok:hover{transform:translate(-50%,-50%) scale(1.28);z-index:1000}
+.tok .ring{position:absolute;inset:0;border-radius:50%;border:2px solid #d8b25a;box-shadow:inset 0 0 0 1px #5a3f12,inset 0 0 5px rgba(0,0,0,.55);pointer-events:none}
+.tok.rend .ring{border-color:#c0ccd2;box-shadow:inset 0 0 0 1px #3e4a50,inset 0 0 5px rgba(0,0,0,.55)}
 .tok img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .tok .badge{position:absolute;right:-5px;top:-5px;width:15px;height:15px;border-radius:50%;background:#1d2340;color:#ffe9a8;font-size:11px;line-height:15px;text-align:center;border:1.5px solid #d8b25a}
 .pop{font-size:12.5px;line-height:1.45;max-width:300px}
@@ -147,3 +147,12 @@ html[data-build="module"] .tok img{background:transparent}
 .lg-sph{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle,rgba(168,50,42,.45),rgba(168,50,42,.08) 70%,transparent 72%);border:1px dashed rgba(168,50,42,.7)}
 .region-lbl .lbl-inner{pointer-events:auto;cursor:pointer}
 .pop p.danger{font-size:12.5px;border-left:3px solid #a8322a;padding-left:6px;margin-top:6px}
+
+.tok.tier-x .ring{border-color:#b9b4a6;box-shadow:inset 0 0 0 1px #4a463e,inset 0 0 5px rgba(0,0,0,.55)}
+.tok img{image-rendering:auto;-webkit-user-drag:none;user-select:none}
+.tok:hover .ring{border-color:#ffe08a}
+.tok.rend:hover .ring{border-color:#eef4f7}
+.hl-mode .tok:hover{opacity:.85;filter:none}
+.leaflet-tooltip.tok-tip{font:700 12px/1.2 Georgia,serif;color:#f4ead0;background:#2b2118;border:1px solid #d8b25a;border-radius:4px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.5);letter-spacing:.02em}
+.leaflet-tooltip-top.tok-tip:before{border-top-color:#d8b25a}
+.leaflet-tooltip-top.tok-tip{margin-top:calc(var(--ts,34px)*-0.64 - 6px)}
