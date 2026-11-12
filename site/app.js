@@ -1,7 +1,7 @@
 (function(){
 const D=window.THENUS_DATA, W=2048, H=1948;
 const params=new URLSearchParams(location.search);
-const CFG=Object.assign({build:'home',version:'15'},window.THENUS_CONFIG||{});
+const CFG=Object.assign({build:'home',version:'17',daysPerUnit:1/24.35},window.THENUS_CONFIG||{});
 if(params.get('build')==='module'||params.get('build')==='home')CFG.build=params.get('build');
 const V='?v='+CFG.version, DM=false;
 
@@ -9,21 +9,30 @@ const art=s=>{const u=CFG.build==='module'?(s.emblem||''):(s.token||s.emblem||''
 document.documentElement.dataset.build=CFG.build;
 const toLL=(x,y)=>L.latLng(-y,x);
 const bounds=L.latLngBounds(toLL(0,H),toLL(W,0));
-const map=L.map('map',{crs:L.CRS.Simple,minZoom:-2.5,maxZoom:4,zoomSnap:0.25,zoomDelta:0.5,wheelPxPerZoomLevel:90,
+const MAXZ=CFG.maxZoom||4.5;
+const map=L.map('map',{crs:L.CRS.Simple,minZoom:-2.5,maxZoom:MAXZ,zoomSnap:0.25,zoomDelta:0.5,wheelPxPerZoomLevel:90,
   maxBounds:bounds.pad(0.12),attributionControl:false});
 map.fitBounds(bounds);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const geo=(data,opts)=>L.geoJSON(data,Object.assign({coordsToLatLng:c=>toLL(c[0],c[1])},opts));
 map.createPane('compass').style.zIndex=350;
+const travelGrid=L.layerGroup();   // v16, filled further down
 
-const tiles=()=>L.tileLayer('tiles/{z}/{x}/{y}.webp'+V,{tileSize:256,minZoom:-3,maxZoom:4,minNativeZoom:-3,maxNativeZoom:3,zoomOffset:3,
+const Z7=window.THENUS_Z7||null;
+const z7has=(x,y)=>{if(!Z7)return false;if(x<0||y<0||x>=Z7.w||y>=Z7.h)return false;const i=y*Z7.w+x;return (Z7.bits.charCodeAt(i>>2)-48)>>(i&3)&1;};
+const DeepTiles=L.TileLayer.extend({createTile:function(c,done){
+  if(c.z>=4&&!z7has(c.x,c.y)){const cv=document.createElement('canvas');cv.width=cv.height=256;const im=new Image();
+    im.onload=()=>{const g=cv.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(im,(c.x&1)*128,(c.y&1)*128,128,128,0,0,256,256);done(null,cv);};
+    im.onerror=()=>done(null,cv);im.src='tiles/6/'+(c.x>>1)+'/'+(c.y>>1)+'.webp'+V;return cv;}
+  return L.TileLayer.prototype.createTile.call(this,c,done);}});
+const tiles=()=>new DeepTiles('tiles/{z}/{x}/{y}.webp'+V,{tileSize:256,minZoom:-3,maxZoom:MAXZ,minNativeZoom:-3,maxNativeZoom:Z7?4:3,zoomOffset:3,
   bounds:bounds,noWrap:true,keepBuffer:3,updateWhenZooming:false});
 const painted=tiles();
 const regionInfo={}; D.labels.regions.forEach(r=>regionInfo[r.name]=r);
 const regionPop=(name)=>{const r=regionInfo[name]||{};return `<div class="pop"><h3>${esc(name)}</h3><div class="meta">Geographic / cultural region (not a realm)</div><p>${esc(r.canon||'')}</p>${r.danger?`<p class="danger"><b>Dangers:</b> ${esc(r.danger)}</p>`:''}${''}</div>`;};
 const regionAreas=(fill)=>geo(D.regions,{style:f=>({color:f.properties.color,weight:0,fillColor:f.properties.color,fillOpacity:fill}),
   onEachFeature:(f,l)=>l.bindPopup(regionPop(f.properties.name))});
-const DAYU=24.2;
+const DAYU=1/CFG.daysPerUnit;
 const spheres=L.layerGroup();
 (D.labels.spheres||[]).filter(sp=>DM||!sp.dm).forEach(sp=>{const N=7;
   for(let i=N;i>=1;i--)spheres.addLayer(L.circle(toLL(sp.x,sp.y),{radius:sp.r*i/N,stroke:false,fillColor:sp.color,fillOpacity:0.13,interactive:false}));
@@ -150,7 +159,16 @@ map.on('zoomend',routeW);routeW();
 
 
 
-const ctl=L.control.layers({'Painted terrain':painted,'Spheres of influence':political},{'Region borders (geographic)':borders,'Labels &amp; cities':labels,'Known travel routes':routes,'Creature tokens':creatures,'Party':partyLayer},{collapsed:window.innerWidth<700,position:'topright'}).addTo(map);
+
+
+let visitedLayer=L.layerGroup();
+if(!DM){((window.THENUS_PINS&&window.THENUS_PINS.pins)||[]).filter(p=>p&&isFinite(p.x)&&isFinite(p.y)).forEach(p=>visitedLayer.addLayer(
+  L.marker(toLL(+p.x,+p.y),{pane:'party',draggable:false,title:String(p.name||'Place visited'),icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="vp-pin"><span>⚑</span></div><div class="vp-lbl">${esc(p.name||'')}</div>`})})
+  .bindPopup(`<div class="pop"><h3>${esc(p.name||'Place visited')}</h3>${p.date?`<div class="meta">${esc(p.date)}</div>`:''}${p.note?`<p>${esc(p.note)}</p>`:''}</div>`)));
+  visitedLayer.addTo(map);}
+
+
+const ctl=L.control.layers({'Painted terrain':painted,'Spheres of influence':political},{'Region borders (geographic)':borders,'Labels &amp; cities':labels,'Known travel routes':routes,'Creature tokens':creatures,'Party':partyLayer,'Places visited':visitedLayer,'Travel days (grid)':travelGrid},{collapsed:window.innerWidth<700,position:'topright'}).addTo(map);
 
 
 if(params.get('mode')==='political'){map.removeLayer(painted);political.addTo(map);}
@@ -180,12 +198,47 @@ const declutter=()=>{if(!map.hasLayer(labels))return;
     const hit=boxes.some(o=>!(b[2]<=o[0]||b[0]>=o[2]||b[3]<=o[1]||b[1]>=o[3]));
     if(hit&&m._pri<5){inner.style.visibility='hidden';const o=boxes.find(o=>!(b[2]<=o[0]||b[0]>=o[2]||b[3]<=o[1]||b[1]>=o[3]));inner.dataset.hit=(o.src||'label')+':'+o.map(Math.round).join(',')+' me:'+b.map(Math.round).join(',');}else{b.src=m._cls;boxes.push(b);}});};
 map.on('zoomend moveend',()=>{zcls();setTimeout(declutter,30);});zcls();setTimeout(declutter,300);
-const DAY=24.2;
+const DAY=1/CFG.daysPerUnit;
 const sb=L.control({position:'bottomleft'});sb.onAdd=()=>{const d=L.DomUtil.create('div','scalebar');
   d.innerHTML='<div class="sb-bar"><span></span><span></span><span></span><span></span></div><div class="sb-lbl"></div>'+('');
-  const upd=()=>{const ppu=Math.pow(2,map.getZoom());let best=1;for(const n of [0.5,1,2,3,5,10,15,20,30]){if(n*DAY*ppu<=150)best=n;}
-    d.querySelector('.sb-bar').style.width=(best*DAY*ppu).toFixed(0)+'px';d.querySelector('.sb-lbl').textContent=(best===0.5?'½ day':best+(best===1?' day':' days'))+"' travel";};
+  const upd=()=>{const ppu=Math.pow(2,map.getZoom());let best=0.5;for(const n of [0.5,1,2,3,5,10,15,20,30]){if(n*DAY*ppu<=170)best=n;}
+    if(DAY*ppu>=36&&DAY*ppu<=340)best=1;
+    d.querySelector('.sb-bar').style.width=(best*DAY*ppu).toFixed(0)+'px';d.querySelector('.sb-lbl').textContent=best===0.5?'½ day':best+(best===1?' day':' days');};
   map.on('zoomend',upd);upd();return d;};sb.addTo(map);
+map.createPane('tgrid').style.zIndex=360;
+(()=>{const G=CFG.travelGrid||{spacing:21.083,angles:[60,-60],offsets:[10.28,10.18]};
+  G.angles.forEach((ang,k)=>{const nx=Math.cos(ang*Math.PI/180),ny=Math.sin(ang*Math.PI/180);
+    const vals=[0,W].flatMap(x=>[0,H].map(y=>x*nx+y*ny)),lo=Math.min(...vals),hi=Math.max(...vals);
+    for(let c=G.offsets[k]+Math.ceil((lo-G.offsets[k])/G.spacing)*G.spacing;c<=hi;c+=G.spacing){
+      const P=[];
+      if(Math.abs(ny)>1e-9){[0,W].forEach(x=>{const y=(c-x*nx)/ny;if(y>=0&&y<=H)P.push([x,y]);});}
+      if(Math.abs(nx)>1e-9){[0,H].forEach(y=>{const x=(c-y*ny)/nx;if(x>=0&&x<=W)P.push([x,y]);});}
+      if(P.length>=2)travelGrid.addLayer(L.polyline([toLL(...P[0]),toLL(...P[1])],{pane:'tgrid',color:'#3a2814',weight:0.9,opacity:0.32,interactive:false}));}});})();
+const meas={on:false,pts:[],layer:L.layerGroup().addTo(map)};
+const msr=L.control({position:'topleft'});msr.onAdd=()=>{const d=L.DomUtil.create('div','measure');
+  d.innerHTML='<button type="button" class="ms-btn" title="Click points on the map to measure travel time">📏 Measure (days)</button><div class="ms-out" hidden><div class="ms-total"></div><ol class="ms-legs"></ol><div class="ms-help">Click the map to add points · double-click or Finish to stop</div><button type="button" class="ms-fin">Finish</button> <button type="button" class="ms-clr">Clear</button></div>';
+  L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);
+  const btn=d.querySelector('.ms-btn'),out=d.querySelector('.ms-out'),tot=d.querySelector('.ms-total'),legs=d.querySelector('.ms-legs'),help=d.querySelector('.ms-help'),fin=d.querySelector('.ms-fin');
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1])*CFG.daysPerUnit;
+  const fmt=v=>v.toFixed(1)+(v.toFixed(1)==='1.0'?' day':' days');
+  const draw=()=>{meas.layer.clearLayers();const P=meas.pts;
+    if(P.length>1){meas.layer.addLayer(L.polyline(P.map(p=>toLL(p[0],p[1])),{color:'#fff6dc',weight:6,opacity:.75,interactive:false}));
+      meas.layer.addLayer(L.polyline(P.map(p=>toLL(p[0],p[1])),{color:'#7a1a14',weight:2.6,dashArray:'8 6',interactive:false}));}
+    let t=0;const L2=[];
+    P.forEach((p,i)=>{meas.layer.addLayer(L.circleMarker(toLL(p[0],p[1]),{radius:4.5,color:'#7a1a14',weight:2,fillColor:'#f1d58a',fillOpacity:1,interactive:false}));
+      if(i>0){const v=dist(P[i-1],p);t+=v;L2.push(v);const m=[(P[i-1][0]+p[0])/2,(P[i-1][1]+p[1])/2];
+        meas.layer.addLayer(L.marker(toLL(m[0],m[1]),{interactive:false,keyboard:false,icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="ms-leg">${v.toFixed(1)} d</div>`})}));}});
+    tot.innerHTML=`<b>Total: ${fmt(t)}</b>`+(P.length<2?' <i>(add points)</i>':'');
+    legs.innerHTML=L2.map((v,i)=>`<li>Leg ${i+1}: ${fmt(v)}</li>`).join('');};
+  const setOn=on=>{meas.on=on;btn.classList.toggle('on',on);map.getContainer().classList.toggle('measuring',on);
+    help.hidden=!on;fin.hidden=!on;if(on){out.hidden=false;map.doubleClickZoom.disable();}else{setTimeout(()=>map.doubleClickZoom.enable(),300);}};
+  btn.onclick=()=>{if(meas.on){setOn(false);}else{meas.pts=[];draw();setOn(true);}};
+  fin.onclick=()=>setOn(false);
+  d.querySelector('.ms-clr').onclick=()=>{meas.pts=[];draw();setOn(false);out.hidden=true;};
+  map.on('click',e=>{if(!meas.on)return;meas.pts.push([e.latlng.lng,-e.latlng.lat]);draw();});
+  map.on('dblclick',()=>{if(meas.on)setOn(false);});
+  msr._api={add:(x,y)=>{meas.pts.push([x,y]);draw();},start:()=>{meas.pts=[];draw();setOn(true);},finish:()=>setOn(false)};
+  return d;};msr.addTo(map);
 const lg=L.control({position:'bottomright'});lg.onAdd=()=>{const d=L.DomUtil.create('div','legend');
   const sw=(c,t)=>`<div class="lg-row"><span class="sw" style="background:${c}"></span>${t}</div>`;
   const ic=(h,t)=>`<div class="lg-row"><span class="ic">${h}</span>${t}</div>`;
@@ -233,5 +286,7 @@ if(params.get('hl')){highlight(params.get('hl'),false);}
 if(params.get('mlayers')==='1'){ctl.expand();const d=document.querySelector('.dnf details');if(d)d.open=true;}
 if(params.get('q')){const inp=document.querySelector('.search input');inp.value=params.get('q');inp.dispatchEvent(new Event('input'));}
 window._thenusMap=map;
+if(params.get('grid')==='1')travelGrid.addTo(map);
+if(params.get('measure')){const v=params.get('measure').split(';').map(p=>p.split(',').map(Number));setTimeout(()=>{msr._api.start();v.forEach(p=>msr._api.add(p[0],p[1]));if(params.get('mfinish')==='1')msr._api.finish();},400);}
 if(params.get('lpopup')&&LP[params.get('lpopup')]){const m=LP[params.get('lpopup')];setTimeout(()=>{m.openPopup();const e=m.getPopup().getElement();if(e)e.style.opacity=1;},1500);}
 })();

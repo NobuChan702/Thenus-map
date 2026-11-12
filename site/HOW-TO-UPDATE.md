@@ -9,3 +9,4 @@ You can move the party pin yourself. Nothing needs to go through anyone else.
 5. The live player map at https://nobuchan702.github.io/Thenus-map/ updates in about a minute. Refresh the page. If you still see the old pin, do a hard refresh (Ctrl+Shift+R, or Cmd+Shift+R on a Mac).
 
 To skip the DM map, you can type new `x` and `y` values by hand in that file. Map units are 0–2048 across and 0–1948 down; one travel day is about 24 units. Leave the `start` block (where the party joined Draven's Circle) as it is unless that should move too.
+
