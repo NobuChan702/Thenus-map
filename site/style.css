@@ -147,11 +147,3 @@ html[data-build="module"] .tok img{background:transparent}
 .lg-sph{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle,rgba(168,50,42,.45),rgba(168,50,42,.08) 70%,transparent 72%);border:1px dashed rgba(168,50,42,.7)}
 .region-lbl .lbl-inner{pointer-events:auto;cursor:pointer}
 .pop p.danger{font-size:12.5px;border-left:3px solid #a8322a;padding-left:6px;margin-top:6px}
-
-.fog-haze{position:absolute;left:0;top:0;pointer-events:none;
-  background:url(fog-mist.png?v=12) repeat,rgba(232,220,192,.36);background-size:520px 520px,auto;
-  -webkit-backdrop-filter:grayscale(.8) sepia(.3) brightness(1.06) blur(1.2px);backdrop-filter:grayscale(.8) sepia(.3) brightness(1.06) blur(1.2px);
-  -webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
-  animation:mistdrift 90s linear infinite;transition:opacity .3s}
-@keyframes mistdrift{from{background-position:0 0,0 0}to{background-position:520px 260px,0 0}}
-.lg-fog{display:inline-block;width:16px;height:12px;border-radius:3px;background:rgba(232,220,192,.85);border:1px solid #b9a77f}

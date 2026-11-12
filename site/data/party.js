@@ -1,4 +1,4 @@
-// Party position shown on the map. See README.md "Updating the party position".
+// Party position shown on the map. See HOW-TO-UPDATE.md.
 window.THENUS_PARTY={
  "name": "Party",
  "position": {
