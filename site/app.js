@@ -1,7 +1,7 @@
 (function(){
 const D=window.THENUS_DATA, W=2048, H=1948;
 const params=new URLSearchParams(location.search);
-const CFG=Object.assign({build:'home',version:'12'},window.THENUS_CONFIG||{});
+const CFG=Object.assign({build:'home',version:'14'},window.THENUS_CONFIG||{});
 if(params.get('build')==='module'||params.get('build')==='home')CFG.build=params.get('build');
 const V='?v='+CFG.version, DM=false;
 
@@ -31,36 +31,6 @@ const spheres=L.layerGroup();
     .bindPopup(`<div class="pop"><h3>${esc(sp.seat)}: sphere of influence</h3><p>${esc(sp.holder)}. Roughly the city and its immediate surroundings (about ${(sp.r/DAYU).toFixed(1).replace('.0','')} day${sp.r/DAYU>1.05?'s':''}' travel); it does not rule the wider region.</p><p class="meta">Outside these circles, towns and villages are independent.</p>${''}</div>`,{maxWidth:Math.min(300,window.innerWidth-60)}));});
 const political=L.layerGroup([tiles(),spheres]);
 painted.addTo(map);
-const FOGPUB=window.THENUS_FOG||{regions:[],areas:[],lines:[]};
-let FOG=JSON.parse(JSON.stringify(FOGPUB));
-const FOGON=params.get('fog')!=='0';
-const RPOLY={};(D.regions.features||[]).forEach(f=>{const g=f.geometry;RPOLY[f.properties.name]=g.type==='Polygon'?[g.coordinates]:g.coordinates;});
-const inRing=(x,y,r)=>{let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const a=r[i],b=r[j];if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))c=!c;}return c;};
-const inRegion=(x,y,n)=>(RPOLY[n]||[]).some(p=>inRing(x,y,p[0])&&!p.slice(1).some(h=>inRing(x,y,h)));
-const segD=(x,y,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],L2=dx*dx+dy*dy;let t=L2?((x-a[0])*dx+(y-a[1])*dy)/L2:0;t=Math.max(0,Math.min(1,t));return Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy);};
-const revealAt=(x,y,F=FOG)=>{let v=0;
-  (F.regions||[]).forEach(r=>{if(r.reveal>v&&inRegion(x,y,r.name))v=r.reveal;});
-  (F.areas||[]).forEach(a=>{if(a.reveal>v&&Math.hypot(x-a.x,y-a.y)<=a.r)v=a.reveal;});
-  (F.lines||[]).forEach(l=>{if(l.reveal>v){for(let i=1;i<l.pts.length;i++)if(segD(x,y,l.pts[i-1],l.pts[i])<=l.w){v=l.reveal;break;}}});return v;};
-const fogOK=(x,y)=>!FOGON||revealAt(x,y,FOGPUB)>=0.4;   // player view: things under thick fog are not shown
-map.createPane('fog').style.zIndex=300;map.getPane('fog').style.pointerEvents='none';
-const fogEl=L.DomUtil.create('div','fog-haze',map.getPane('fog'));
-const fogCv=document.createElement('canvas');let fogPlayer=!DM;
-const drawFog=()=>{if(!FOGON){fogEl.style.display='none';return;}
-  const sz=map.getSize(),pad=Math.round(Math.max(sz.x,sz.y)*0.35),K=0.5,w=Math.round((sz.x+2*pad)*K),h=Math.round((sz.y+2*pad)*K);
-  fogCv.width=w;fogCv.height=h;const g=fogCv.getContext('2d'),ppu=Math.pow(2,map.getZoom())*K;
-  const P=(x,y)=>{const p=map.latLngToContainerPoint(toLL(x,y));return[(p.x+pad)*K,(p.y+pad)*K];};
-  g.filter='blur('+Math.max(2,Math.round(14*ppu))+'px)';g.fillStyle='#fff';g.globalAlpha=0.4;g.fillRect(-50,-50,w+100,h+100);g.globalAlpha=1;   // seas: light haze only
-  g.beginPath();Object.values(RPOLY).forEach(poly=>poly.forEach(ring=>ring[0].forEach((c,i)=>{const q=P(c[0],c[1]);i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]);})));g.fill('nonzero');   // land: full haze
-  g.globalCompositeOperation='destination-out';
-  (FOG.regions||[]).forEach(r=>{g.globalAlpha=r.reveal;g.beginPath();(RPOLY[r.name]||[]).forEach(poly=>poly.forEach(ring=>ring.forEach((c,i)=>{const q=P(c[0],c[1]);i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]);})));g.fill('evenodd');});
-  (FOG.areas||[]).forEach(a=>{g.globalAlpha=a.reveal;const q=P(a.x,a.y);g.beginPath();g.arc(q[0],q[1],a.r*ppu,0,7);g.fill();});
-  (FOG.lines||[]).forEach(l=>{g.globalAlpha=l.reveal;g.lineWidth=2*l.w*ppu;g.lineCap=g.lineJoin='round';g.strokeStyle='#000';g.beginPath();l.pts.forEach((c,i)=>{const q=P(c[0],c[1]);i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]);});g.stroke();});
-  const url='url('+fogCv.toDataURL('image/png')+')';
-  Object.assign(fogEl.style,{display:'',width:(sz.x+2*pad)+'px',height:(sz.y+2*pad)+'px',maskImage:url,webkitMaskImage:url,opacity:fogPlayer?1:0.45});
-  L.DomUtil.setPosition(fogEl,map.containerPointToLayerPoint([-pad,-pad]));};
-map.on('zoomstart',()=>{fogEl.style.visibility='hidden';});
-map.on('moveend zoomend resize',()=>{drawFog();fogEl.style.visibility='';});
 L.imageOverlay('data/compass.svg'+V,L.latLngBounds(toLL(25,370),toLL(395,0)),{pane:'compass'}).addTo(map);
 
 const borders=geo(D.borders,{style:{color:'#fbf6ea',weight:2.2,opacity:.85,dashArray:'8 7',lineCap:'round',interactive:false}}).addTo(map);
@@ -86,7 +56,7 @@ D.labels.cities.forEach(c=>{
   LP[c.name]=labels.getLayers()[labels.getLayers().length-1];
   labels.addLayer(lbl(c.x,c.y,'city-lbl'+(c.kind==='village'?' village':''),`<div class="scroll">${scrollSVG}${esc(c.name)}</div>`,0));
 });
-(D.labels.landmarks||[]).filter(l=>DM||fogOK(l.px,l.py)).forEach(l=>{
+(D.labels.landmarks||[]).forEach(l=>{
   const title=l.suggestedName||l.name;
   const m=L.marker(toLL(l.px,l.py),{icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="lm-hit${l.pin?' lm-pin '+l.kind:''}"></div>`})})
     .bindPopup(`<div class="pop"><h3>${esc(title)}</h3>${l.suggestedName?`<div class="meta">${esc(l.name)}</div>`:''}<p>${esc(l.canon)}</p>${''}</div>`);
@@ -108,7 +78,7 @@ const popupHTML=s=>{
   ${s.habitat?`<p><b>Habitat:</b> ${esc(s.habitat)}</p>`:''}
   ${a?`<p><b>Active:</b> ${a}</p>`:''}
   ${s.desc?`<p>${esc(s.desc)}</p>`:''}${''}</div>`;};
-const toks=D.creatures.tokens.filter(t=>DM||fogOK(t.x,t.y)).map(t=>{
+const toks=D.creatures.tokens.map(t=>{
   const s=SP[t.name];
   const badge=s.activity==='night'?'<span class="badge" title="Nocturnal">☾</span>':s.activity==='day'?'<span class="badge" style="background:#e9a93a;color:#fff">☀</span>':'';
   const m=L.marker(toLL(t.x,t.y),{title:s.name,riseOnHover:true,
@@ -219,14 +189,14 @@ const lg=L.control({position:'bottomright'});lg.onAdd=()=>{const d=L.DomUtil.cre
   const ic=(h,t)=>`<div class="lg-row"><span class="ic">${h}</span>${t}</div>`;
   d.innerHTML=`<details${window.innerWidth<700||params.get('legend')==='0'?'':(params.get('legend')==='1'?' open':'')}><summary><b>Legend</b></summary><div class="lg-body">
   <div class="lg-h">Places</div>${ic('<span class="city-dot"></span>','City')}${ic('<span class="city-dot village"></span>','Village')}${ic('<span class="lm-pin-ic"></span>','Landmark')}${ic('<span class="lg-ruin">⛫</span>','Ruins')}${ic('<span class="lg-cav"></span>','Great Cavern')}
-  <div class="lg-h">Lines</div>${ic('<span class="ln route"></span>','Known travel route')}${ic('<span class="bridge lg"></span>','Bridge')}${ic('<span class="ln border"></span>','Geographic region border')}${ic('<span class="lg-sph"></span>','Sphere of influence (Spheres view)')}${ic('<span class="lg-fog"></span>','Unexplored (misty)')}
+  <div class="lg-h">Lines</div>${ic('<span class="ln route"></span>','Known travel route')}${ic('<span class="bridge lg"></span>','Bridge')}${ic('<span class="ln border"></span>','Geographic region border')}${ic('<span class="lg-sph"></span>','Sphere of influence (Spheres view)')}
   <div class="lg-h">Land</div>${sw('#b8a46a','Grassland / savanna')}${sw('#e2c487','Desert')}${sw('#4f6a3c','Forest')}${sw('#3c5838','Deep forest / jungle')}${sw('#b97a3c','Autumn woods')}${sw('#6c7448','Marsh / wetland')}${sw('#a99273','Mountains')}${sw('#56463f','Volcanic foothills')}${sw('#e9ecef','Snow / peaks')}
   <div class="lg-h">Tokens</div>${ic('<span class="lg-tok kael"></span>','Kael-tier creature')}${ic('<span class="lg-tok rend"></span>','Rend-tier creature')}${ic('<span class="badge lgb">☾</span>','Night-active')}${ic('<span class="badge lgb day">☀</span>','Day-active')}${ic('<span class="lg-party"></span>','The party')}
   </div></details>`;
   L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);return d;};lg.addTo(map);
 const IDX=[];
 D.labels.cities.forEach(c=>IDX.push({t:c.name,k:c.kind==='village'?'Village':'City',x:c.x,y:c.y,go:()=>LP[c.name]}));
-(D.labels.landmarks||[]).filter(l=>DM||fogOK(l.px,l.py)).forEach(l=>IDX.push({t:l.suggestedName||l.name,k:l.kind==='cavern'?'Great Cavern':'Landmark',x:l.px,y:l.py,go:()=>LP[l.suggestedName||l.name]}));
+(D.labels.landmarks||[]).forEach(l=>IDX.push({t:l.suggestedName||l.name,k:l.kind==='cavern'?'Great Cavern':'Landmark',x:l.px,y:l.py,go:()=>LP[l.suggestedName||l.name]}));
 D.labels.regions.forEach(r=>IDX.push({t:r.name,k:'Region',x:r.x,y:r.y,region:r}));
 D.labels.seas.forEach(r=>IDX.push({t:r.name,k:'Sea',x:r.x,y:r.y}));
 (D.labels.ports||[]).forEach(pt=>{if(pt.name)IDX.push({t:pt.name,k:'Port',x:pt.x,y:pt.y,go:()=>LP[pt.name]});});
@@ -260,8 +230,6 @@ if(window.innerWidth<700){const h=document.querySelector('.hint');if(h)h.style.d
 if(params.get('hl')){highlight(params.get('hl'),false);}
 if(params.get('mlayers')==='1'){ctl.expand();const d=document.querySelector('.dnf details');if(d)d.open=true;}
 if(params.get('q')){const inp=document.querySelector('.search input');inp.value=params.get('q');inp.dispatchEvent(new Event('input'));}
-
-drawFog();
 window._thenusMap=map;
 if(params.get('lpopup')&&LP[params.get('lpopup')]){const m=LP[params.get('lpopup')];setTimeout(()=>{m.openPopup();const e=m.getPopup().getElement();if(e)e.style.opacity=1;},1500);}
 })();
