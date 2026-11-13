@@ -130,6 +130,35 @@ const applyParty=d=>{const m=PARTY&&PARTY.marker,pos=PARTY&&PARTY.pos;if(!m||!po
 let lfSync=null;
 if(ON&&PARTY&&PARTY.marker)stream('/party/pos',applyParty,()=>{});
 
+/* ---- v18.1 public DM unlock (BEGIN). Open the PUBLIC map once with #dm=<key>: the key is saved in this browser only
+   (localStorage), removed from the address bar, and the party crest becomes draggable and pushes live through
+   /dmstamp/<key> exactly like the DM copy. The key is never in any site file; "Lock DM" forgets it. ---- */
+const DMK='thenus.dmkey.v1', keyOk=k=>/^dm_[A-Za-z0-9]{16,64}$/.test(k||'');
+(()=>{const h=String(location.hash||'').replace(/^#/,'');if(!/(^|&)dm=/.test(h))return;
+  const parts=h.split('&'),kv=parts.find(x=>x.indexOf('dm=')===0),k=decodeURIComponent(kv.slice(3)),rest=parts.filter(x=>x!==kv).join('&');
+  try{history.replaceState(null,'',location.pathname+location.search+(rest?'#'+rest:''));}catch(e){}
+  if(keyOk(k)){try{localStorage.setItem(DMK,k);}catch(e){}}})();
+const dmKey=()=>{try{const k=localStorage.getItem(DMK)||'';return keyOk(k)?k:'';}catch(e){return '';}};
+if(!DM&&dmKey()&&PARTY&&PARTY.marker){const m=PARTY.marker,mc=map.getContainer();
+  const u=L.control({position:'bottomright'});let ud=null;
+  const sayU=(t,bad)=>{if(!ud)return;const e=ud.querySelector('.pmk-msg');e.textContent=t||'';e.classList.toggle('bad',!!bad);};
+  const lock=()=>{try{localStorage.removeItem(DMK);}catch(e){}if(m.dragging)m.dragging.disable();mc.classList.remove('pmk-unlocked');if(ud)u.remove();};
+  const pushU=()=>{const k=dmKey(),p=PARTY.pos;if(!k||!p)return;const body={};body['dmstamp/'+k]=TS;
+    body['party/pos']={x:clamp(p.x,0,W),y:clamp(p.y,0,H),date:cut(p.date,10),note:cut(p.note,300),t:TS};sayU('Moving the flag…');
+    req('PATCH','/',body).then(()=>sayU('Flag moved ✓ everyone sees it within a second or two.'),e=>{sayU('The map server refused the move ('+e.message+'). The DM link may be wrong: Lock DM and open the link again.',true);
+      const b=liveParty||orig;if(b){Object.assign(p,{x:b.x,y:b.y});m.setLatLng(toLL(b.x,b.y));}});};
+  u.onAdd=()=>{const d=L.DomUtil.create('div','pmk-box pmk-unl');ud=d;
+    d.innerHTML='<div class="pmk-hd"><span class="pmk-badge">DM</span><b>Party flag unlocked</b></div><div class="pmk-tip">Drag the party crest to move it for everyone.</div><button type="button" class="u-stop alt" title="Players see the position from data/party.js again">Stop live flag</button> <button type="button" class="u-lock del">Lock DM</button><div class="pmk-msg"></div>';
+    L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);
+    d.querySelector('.u-lock').onclick=()=>{if(confirm('Lock DM mode? This browser forgets the DM key; open the DM link again to unlock.'))lock();};
+    d.querySelector('.u-stop').onclick=()=>{const k=dmKey();if(!k||!confirm('Stop the live flag? Everyone sees the position from data/party.js again.'))return;
+      const body={};body['dmstamp/'+k]=TS;body['party/pos']=null;req('PATCH','/',body).then(()=>sayU('Live flag stopped.'),e=>sayU('Failed: '+e.message,true));};
+    if(!ON){d.querySelectorAll('button.u-stop').forEach(b=>b.disabled=true);d.querySelector('.pmk-tip').textContent='';sayU('The live map server is not switched on yet, so the flag cannot be moved here.',true);}
+    return d;};u.addTo(map);
+  if(ON){m.dragging.enable();mc.classList.add('pmk-unlocked');m.on('dragend',()=>{if(dmKey())setTimeout(pushU,0);});}
+  window.__thenusDmUnlocked=true;}
+/* ---- v18.1 public DM unlock (END) ---- */
+
 
 window.__thenusLive={on:ON,markers:()=>data};
 })();
