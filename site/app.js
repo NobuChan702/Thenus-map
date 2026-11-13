@@ -1,7 +1,7 @@
 (function(){
 const D=window.THENUS_DATA, W=2048, H=1948;
 const params=new URLSearchParams(location.search);
-const CFG=Object.assign({build:'home',version:'17',daysPerUnit:1/24.35},window.THENUS_CONFIG||{});
+const CFG=Object.assign({build:'home',version:'18',daysPerUnit:1/24.35},window.THENUS_CONFIG||{});
 if(params.get('build')==='module'||params.get('build')==='home')CFG.build=params.get('build');
 const V='?v='+CFG.version, DM=false;
 
@@ -168,7 +168,31 @@ if(!DM){((window.THENUS_PINS&&window.THENUS_PINS.pins)||[]).filter(p=>p&&isFinit
   visitedLayer.addTo(map);}
 
 
-const ctl=L.control.layers({'Painted terrain':painted,'Spheres of influence':political},{'Region borders (geographic)':borders,'Labels &amp; cities':labels,'Known travel routes':routes,'Creature tokens':creatures,'Party':partyLayer,'Places visited':visitedLayer,'Travel days (grid)':travelGrid},{collapsed:window.innerWidth<700,position:'topright'}).addTo(map);
+map.createPane('ambient').style.zIndex=340;map.getPane('ambient').style.pointerEvents='none';
+const Ambient=L.Layer.extend({onAdd(m){
+  const c=L.DomUtil.create('div','amb-clouds',m.getContainer());
+  for(let i=0;i<7;i++){const d=L.DomUtil.create('div','amb-cloud',c);d.style.top=(4+i*13+Math.random()*6)+'%';
+    d.style.animationDuration=(110+Math.random()*90)+'s';d.style.animationDelay=(-Math.random()*200)+'s';d.style.setProperty('--cs',(0.7+Math.random()*0.6).toFixed(2));}
+  this._c=c;const ns='http://www.w3.org/2000/svg',s=document.createElementNS(ns,'svg');s.setAttribute('viewBox','0 0 '+W+' '+H);
+  s.innerHTML='<defs><mask id="amb-sea" maskUnits="userSpaceOnUse" x="0" y="0" width="'+W+'" height="'+H+'"><image href="data/seamask.png'+V+'" x="0" y="0" width="'+W+'" height="'+H+'" preserveAspectRatio="none"/></mask>'+
+    '<pattern id="amb-wv" width="46" height="23" patternUnits="userSpaceOnUse"><path d="M2 8q6-4 12 0t12 0M25 19q6-4 12 0t12 0" fill="none" stroke="#eef8fa" stroke-width="1.1" stroke-linecap="round"/>'+
+    '<animateTransform attributeName="patternTransform" type="translate" from="0 0" to="46 0" dur="16s" repeatCount="indefinite"/></pattern></defs>'+
+    '<g mask="url(#amb-sea)"><rect class="amb-wave" width="'+W+'" height="'+H+'" fill="url(#amb-wv)"/></g>';
+  this._w=L.svgOverlay(s,bounds,{interactive:false,pane:'ambient'}).addTo(m);
+  this._z=()=>{s.style.display=m.getZoom()>2.25?'none':'';};m.on('zoomend',this._z);this._z();},
+  onRemove(m){this._c.remove();m.removeLayer(this._w);m.off('zoomend',this._z);}});
+const ambient=new Ambient();
+const Frame=L.Layer.extend({onAdd(m){const c=m.getContainer();c.classList.add('framed');
+  const f=L.DomUtil.create('div','pframe',c);f.innerHTML='<i class="pf-c tl"></i><i class="pf-c tr"></i><i class="pf-c bl"></i><i class="pf-c br"></i>'+
+   '<svg class="rose" viewBox="-50 -50 100 100" aria-hidden="true"><circle r="31" fill="none" stroke="#4a3520" stroke-width="1.2"/><circle r="27" fill="none" stroke="#4a3520" stroke-width=".6" stroke-dasharray="1.5 2.2"/>'+
+   '<g fill="#e9d6a6" stroke="#4a3520" stroke-width=".8"><path d="M0-25 4-4 25 0 4 4 0 25-4 4-25 0-4-4Z" transform="rotate(45)"/></g>'+
+   '<g stroke="#3b2614" stroke-width=".8"><path d="M0-44 6-6 0 0Z" fill="#7a5428"/><path d="M0-44-6-6 0 0Z" fill="#f6e8c4"/><path d="M0 44-6 6 0 0Z" fill="#7a5428"/><path d="M0 44 6 6 0 0Z" fill="#f6e8c4"/>'+
+   '<path d="M44 0 6 6 0 0Z" fill="#7a5428"/><path d="M44 0 6-6 0 0Z" fill="#f6e8c4"/><path d="M-44 0-6-6 0 0Z" fill="#7a5428"/><path d="M-44 0-6 6 0 0Z" fill="#f6e8c4"/></g>'+
+   '<circle r="3" fill="#7a5428" stroke="#3b2614" stroke-width=".8"/><text y="-46" text-anchor="middle" font-family="Thenus Fell,Georgia,serif" font-size="11" fill="#3b2614">N</text></svg>';
+  this._f=f;},onRemove(m){this._f.remove();m.getContainer().classList.remove('framed');}});
+const frame=new Frame();if(params.get('frame')!=='0')frame.addTo(map);
+if(params.get('anim')==='1')ambient.addTo(map);
+const ctl=L.control.layers({'Painted terrain':painted,'Spheres of influence':political},{'Region borders (geographic)':borders,'Labels &amp; cities':labels,'Known travel routes':routes,'Creature tokens':creatures,'Party':partyLayer,'Places visited':visitedLayer,'Travel days (grid)':travelGrid,'Map frame &amp; compass':frame,'Ambient animation (clouds &amp; water)':ambient},{collapsed:window.innerWidth<700,position:'topright'}).addTo(map);
 
 
 if(params.get('mode')==='political'){map.removeLayer(painted);political.addTo(map);}
@@ -286,6 +310,9 @@ if(params.get('hl')){highlight(params.get('hl'),false);}
 if(params.get('mlayers')==='1'){ctl.expand();const d=document.querySelector('.dnf details');if(d)d.open=true;}
 if(params.get('q')){const inp=document.querySelector('.search input');inp.value=params.get('q');inp.dispatchEvent(new Event('input'));}
 window._thenusMap=map;
+/* ---- v17.1 live hook (BEGIN): read by live.js (player markers + live party flag). Keep this block when merging v18. ---- */
+window._thenus={map,ctl,toLL,esc,DM,CFG,params,party:{P,LSK,pop:p=>partyPop(p),get pos(){return pos;},get marker(){return partyM;}}};
+/* ---- v17.1 live hook (END) ---- */
 if(params.get('grid')==='1')travelGrid.addTo(map);
 if(params.get('measure')){const v=params.get('measure').split(';').map(p=>p.split(',').map(Number));setTimeout(()=>{msr._api.start();v.forEach(p=>msr._api.add(p[0],p[1]));if(params.get('mfinish')==='1')msr._api.finish();},400);}
 if(params.get('lpopup')&&LP[params.get('lpopup')]){const m=LP[params.get('lpopup')];setTimeout(()=>{m.openPopup();const e=m.getPopup().getElement();if(e)e.style.opacity=1;},1500);}

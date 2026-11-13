@@ -1,0 +1,31 @@
+
+.pmk-pin{position:absolute;width:30px;height:30px;left:-15px;top:-42px;border-radius:50%;background:var(--c,#555);border:3px solid #fff;
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.55),0 3px 6px rgba(0,0,0,.45);cursor:grab;box-sizing:border-box}
+.pmk-pin::after{content:'';position:absolute;left:50%;top:100%;width:4px;height:12px;margin-left:-2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.45);border-radius:0 0 2px 2px}
+.pmk-pin span{display:block;color:#fff;font:700 14px/24px system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center;text-shadow:0 1px 1px rgba(0,0,0,.5)}
+.pmk-lbl{position:absolute;left:0;top:-2px;transform:translate(-50%,0);white-space:nowrap;font:600 12px system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:#fff;background:rgba(20,20,28,.8);border:1px solid var(--c,#555);padding:1px 6px;border-radius:9px;pointer-events:none}
+.leaflet-dragging .pmk-pin{cursor:grabbing}
+.pmk-adding,.pmk-adding .leaflet-interactive{cursor:crosshair!important}
+.pmk-box{background:rgba(255,255,255,.96);border:1px solid #39404a;border-radius:8px;padding:7px 9px;font:13px system-ui,-apple-system,'Segoe UI',sans-serif;
+  max-width:250px;box-shadow:0 2px 8px rgba(0,0,0,.35);color:#1d232b}
+.pmk-hd{display:flex;align-items:center;gap:5px}.pmk-hd b{font-size:13.5px}
+.pmk-n{color:#5b6570;font-size:12px}
+.pmk-st{display:inline-block;width:9px;height:9px;border-radius:50%;background:#c9a227;margin-left:auto}
+.pmk-st.live{background:#2e9e4f}.pmk-st.denied,.pmk-st.off{background:#a0a7ae}.pmk-st.retry{background:#d0782a}
+.pmk-box .pmk-min{border:0;background:none;font:700 14px/1 sans-serif;cursor:pointer;color:#5b6570;padding:0 2px}
+.pmk-box.min .pmk-body{display:none}
+.pmk-me{font-size:12px;margin:4px 0}.pmk-sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px -1px 2px;border:1px solid #fff;box-shadow:0 0 0 1px #0006}
+.pmk-box .pmk-link{border:0;background:none;color:#2563a8;text-decoration:underline;cursor:pointer;font:12px system-ui,sans-serif;padding:0}
+.pmk-box button,.pmk-pop button{font:600 12.5px system-ui,-apple-system,'Segoe UI',sans-serif;background:#2563a8;color:#fff;border:1px solid #1a4a80;border-radius:5px;padding:4px 10px;cursor:pointer}
+.pmk-box button.on{background:#c9a227;border-color:#8a6d12;color:#1d232b}
+.pmk-box button:disabled{opacity:.5;cursor:default}
+.pmk-box .alt,.pmk-pop .alt{background:#6b7480;border-color:#4b525b}
+.pmk-pop .del{background:#a8322a;border-color:#6e1e19}
+.pmk-who{margin:4px 0}.pmk-who label{display:block;font-size:12px}
+.pmk-who input,.pmk-edit input,.pmk-edit textarea{width:100%;box-sizing:border-box;font:13px system-ui,sans-serif;margin:2px 0 4px;padding:3px 5px}
+.pmk-edit label{display:block;font-size:12px}
+.pmk-btns{margin-top:6px}
+.pmk-msg{font-size:11.5px;color:#2e6b3a;margin-top:4px}.pmk-msg.bad{color:#a8322a}
+.pmk-msg:empty{display:none}
+.pmk-box .del{background:#a8322a;border-color:#6e1e19}
