@@ -187,3 +187,8 @@ html[data-build="module"] .tok img{background:transparent}
 @keyframes amb-shim{0%,100%{opacity:.14}50%{opacity:.34}}
 @media (prefers-reduced-motion:reduce){.amb-cloud,.amb-wave{animation:none}}
 @media (max-width:700px){.pframe{border-width:6px}.pframe .rose{width:52px;height:52px;bottom:84px;left:10px}.pf-c{display:none}}
+
+/* v18.2: travel-day grid — darker ink, slightly thicker, faint light halo so it reads on sand and forest */
+.leaflet-tgrid-pane path{
+  filter:drop-shadow(0 0 0.7px #f7eed8) drop-shadow(0 0 1.6px rgba(247,238,216,.85));
+}

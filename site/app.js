@@ -237,7 +237,7 @@ map.createPane('tgrid').style.zIndex=360;
       const P=[];
       if(Math.abs(ny)>1e-9){[0,W].forEach(x=>{const y=(c-x*nx)/ny;if(y>=0&&y<=H)P.push([x,y]);});}
       if(Math.abs(nx)>1e-9){[0,H].forEach(y=>{const x=(c-y*ny)/nx;if(x>=0&&x<=W)P.push([x,y]);});}
-      if(P.length>=2)travelGrid.addLayer(L.polyline([toLL(...P[0]),toLL(...P[1])],{pane:'tgrid',color:'#3a2814',weight:0.9,opacity:0.32,interactive:false}));}});})();
+      if(P.length>=2)travelGrid.addLayer(L.polyline([toLL(...P[0]),toLL(...P[1])],{pane:'tgrid',color:'#1c1208',weight:1.5,opacity:0.78,interactive:false,className:'tgrid-line'}));}});})();
 const meas={on:false,pts:[],layer:L.layerGroup().addTo(map)};
 const msr=L.control({position:'topleft'});msr.onAdd=()=>{const d=L.DomUtil.create('div','measure');
   d.innerHTML='<button type="button" class="ms-btn" title="Click points on the map to measure travel time">📏 Measure (days)</button><div class="ms-out" hidden><div class="ms-total"></div><ol class="ms-legs"></ol><div class="ms-help">Click the map to add points · double-click or Finish to stop</div><button type="button" class="ms-fin">Finish</button> <button type="button" class="ms-clr">Clear</button></div>';
